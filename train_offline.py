@@ -122,11 +122,15 @@ def train(config):
         total_steps += episode_steps
         print("Episode: {} | Reward: {} | Q Loss: {} | Steps: {}".format(i, rewards, loss, steps,))
         # print("Episode: {} | Reward: {} | Steps: {}".format(i, reward_, steps,))
+        if (i%30 == 0):
+            torch.save(agent.network.state_dict(), "trained_models/offline_{}_{}.pth".format(config.env, i))
 
         if (i %10 == 0) and config.log_video:
             mp4list = glob.glob('video/*.mp4')
             if len(mp4list) > 1:
                 mp4 = mp4list[-2]
+        torch.save(agent.network.state_dict(), "trained_models/offline_{}_final.pth".format(config.env))
+
 
 if __name__ == "__main__":
     config = get_config()
