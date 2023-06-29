@@ -1,3 +1,8 @@
+### Set up env
+```bash
+conda env create -f environment.yml
+```
+
 ### Download Dataset
 ```bash
 cd data
