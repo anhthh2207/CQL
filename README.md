@@ -1,5 +1,5 @@
 # CQL
-Conservativa Q learning
+Conservative Q learning
 
 ### Set up env
 ```bash
