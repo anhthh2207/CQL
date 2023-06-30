@@ -71,7 +71,7 @@ def train(config):
         states = states.squeeze(1)
         next_states = next_states.squeeze(1)
 
-        batch_size = 32
+        batch_size = 128
         batch_states = torch.split(states, batch_size, dim=0)
         batch_actions = torch.split(actions, batch_size, dim=0)
         batch_rewards = torch.split(rewards, batch_size, dim=0)
@@ -83,7 +83,7 @@ def train(config):
          
         reward_ = 0
         # perform with the learned model
-        if i%100 == 0:
+        if i%50 == 0:
             print("Evaluating...")
             state = env.reset()
             reward_ = 0
