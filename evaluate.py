@@ -35,8 +35,8 @@ def eval(config):
     np.random.seed(config.seed)
     random.seed(config.seed)
     torch.manual_seed(config.seed)
-    env = gym.make(config.env)
-    # env = AtariEnv(game='Breakout')
+    # env = gym.make(config.env)
+    env = AtariEnv(game='Breakout')
     
     env.seed(config.seed)
     env.action_space.seed(config.seed)
@@ -56,7 +56,7 @@ def eval(config):
     agent = CQLAgent(state_size=math.prod(env.observation_space.shape),
                         action_size=env.action_space.n,
                         device=device)
-    agent.network.load_state_dict(torch.load('trained_models/breakout_online.pt'))
+    agent.network.load_state_dict(torch.load('trained_models/online_Breakout-v4_1430.pth'))
     agent.network.eval()
 
 
@@ -71,7 +71,7 @@ def eval(config):
         rewards = 0
         episode_steps = 0
         while True:
-            action = agent.get_action(state, epsilon=eps)
+            action = agent.get_action(state, epsilon=0.01)
             steps += 1
             next_state, reward, done, _ = env.step(action[0])
             state = next_state

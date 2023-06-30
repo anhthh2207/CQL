@@ -30,29 +30,40 @@ class DDQN_Online(nn.Module):
 
         self.input_shape = state_size
         self.action_size = action_size
-        self.conv = nn.Sequential(nn.Conv2d(in_channels=3, out_channels=6, kernel_size=5, stride=1, padding=0),
-                                    nn.ReLU(),
-                                    nn.MaxPool2d(kernel_size=4, stride=2),
-                                    nn.Conv2d(in_channels=6, out_channels=10, kernel_size=5, stride=1, padding=0),
-                                    nn.ReLU(),
-                                    nn.MaxPool2d(kernel_size=4, stride=4),
-                                    nn.Conv2d(in_channels=10, out_channels=14, kernel_size=5, stride=1, padding=0),
-                                    nn.ReLU(),
-                                    nn.Flatten())
+        # self.conv = nn.Sequential(nn.Conv2d(in_channels=3, out_channels=6, kernel_size=5, stride=1, padding=0),
+        #                             nn.ReLU(),
+        #                             nn.MaxPool2d(kernel_size=4, stride=2),
+        #                             nn.Conv2d(in_channels=6, out_channels=10, kernel_size=5, stride=1, padding=0),
+        #                             nn.ReLU(),
+        #                             nn.MaxPool2d(kernel_size=4, stride=4),
+        #                             nn.Conv2d(in_channels=10, out_channels=14, kernel_size=5, stride=1, padding=0),
+        #                             nn.ReLU(),
+        #                             nn.Flatten())
 
-        self.ff_1 = nn.Linear(3920, 1240)
-        self.ff_2 = nn.Linear(1240, 512) 
-        self.ff_3 = nn.Linear(512, 64)
-        self.ff_4 = nn.Linear(64, action_size)
+        # self.ff_1 = nn.Linear(3920, 1240)
+        # self.ff_2 = nn.Linear(1240, 512) 
+        # self.ff_3 = nn.Linear(512, 64)
+        # self.ff_4 = nn.Linear(64, action_size)
+
+        self.conv = nn.Sequential(
+            nn.Conv2d(in_channels = 1, out_channels = 8, kernel_size = 4, stride = 4),
+            nn.ReLU(),
+            nn.Conv2d(in_channels = 8, out_channels = 16, kernel_size = 4, stride = 2),
+            nn.ReLU(),
+            # nn.Conv2d(in_channels = 64, out_channels = 64, kernel_size = 3, stride = 1),
+            # nn.ReLU(),
+            nn.Flatten())
+
+        self.ff_1 = nn.Linear(1296, 520)
+        self.ff_2 = nn.Linear(520, action_size)
 
     def forward(self, input):
         """
         
         """
         x = self.conv(input)
+        # print(x.shape)
         x = torch.relu(self.ff_1(x))
-        x = torch.relu(self.ff_2(x))
-        x = torch.relu(self.ff_3(x))
-        out = self.ff_4(x)
+        out = self.ff_2(x)
         
         return out

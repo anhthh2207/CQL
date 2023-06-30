@@ -10,7 +10,8 @@ from buffer import ReplayBuffer
 import glob
 from utils import save, collect_random
 import random
-from agent import CQLAgent, CQLAgent_Online
+from agent import CQLAgent, CQLAgent_Conv
+from preprocess import AtariEnv
 
 def get_config():
     parser = argparse.ArgumentParser(description='RL')
@@ -20,7 +21,7 @@ def get_config():
     parser.add_argument("--buffer_size", type=int, default=100_000, help="Maximal training dataset size, default: 100_000")
     parser.add_argument("--seed", type=int, default=1, help="Seed, default: 1")
     parser.add_argument("--min_eps", type=float, default=0.01, help="Minimal Epsilon, default: 4")
-    parser.add_argument("--eps_frames", type=int, default=1e3, help="Number of steps for annealing the epsilon value to the min epsilon, default: 1e-5")
+    parser.add_argument("--eps_frames", type=int, default=50`*1e4, help="Number of steps for annealing the epsilon value to the min epsilon, default: 1e-5")
     parser.add_argument("--log_video", type=int, default=1, help="Log agent behaviour to wanbd when set to 1, default: 0")
     parser.add_argument("--save_every", type=int, default=100, help="Saves the network every x epochs, default: 25")
     
@@ -31,7 +32,8 @@ def train(config):
     np.random.seed(config.seed)
     random.seed(config.seed)
     torch.manual_seed(config.seed)
-    env = gym.make(config.env)
+    # env = gym.make(config.env)
+    env = AtariEnv(game='Breakout')
     
     env.seed(config.seed)
     env.action_space.seed(config.seed)
@@ -45,9 +47,10 @@ def train(config):
     total_steps = 0
     
     print(env.observation_space.shape)
-    agent = CQLAgent_Online(state_size=env.observation_space.shape,
+    agent = CQLAgent_Conv(state_size=env.observation_space.shape,
                         action_size=env.action_space.n,
                         device=device)
+    print(agent.network)
     
 
 
@@ -58,7 +61,9 @@ def train(config):
     if config.log_video:
         env = gym.wrappers.Monitor(env, './video', video_callable=lambda x: x%10==0, force=True)
 
-    for i in range(1, config.episodes+1):
+    i = 0
+    # for i in range(1, config.episodes+1):
+    while True:
         state = env.reset()
         episode_steps = 0
         rewards = 0
@@ -73,21 +78,25 @@ def train(config):
             episode_steps += 1
             eps = max(1 - ((steps*d_eps)/config.eps_frames), config.min_eps)
             if done:
+                i += 1
                 break
 
         
 
         average10.append(rewards)
         total_steps += episode_steps
-        print("Episode: {} | Reward: {} | Q Loss: {} | Steps: {}".format(i, rewards, loss, steps,))
-        if (i%30 == 0):
+        print("Episode: {} | Epsilon {} | Reward: {} | Q Loss: {} | Steps: {}".format(i, eps, rewards, loss, steps,))
+        if (i%130 == 0):
             torch.save(agent.network.state_dict(), "trained_models/online_{}_{}.pth".format(config.env, i))
 
         if (i %10 == 0) and config.log_video:
             mp4list = glob.glob('video/*.mp4')
             if len(mp4list) > 1:
                 mp4 = mp4list[-2]
-        torch.save(agent.network.state_dict(), "trained_models/online_{}_final.pth".format(config.env))
+        if reward > 50: 
+            break
+
+    torch.save(agent.network.state_dict(), "trained_models/online_{}_final.pth".format(config.env))
 
 if __name__ == "__main__":
     config = get_config()

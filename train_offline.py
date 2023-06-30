@@ -11,7 +11,7 @@ import glob
 from utils import save, collect_random
 import random
 from data import Data
-from agent import CQLAgent
+from agent import CQLAgent, CQLAgent_Conv
 from preprocess import AtariEnv
 
 def get_config():
@@ -48,7 +48,7 @@ def train(config):
     total_steps = 0
     
     print(env.observation_space.shape)
-    agent = CQLAgent(state_size=84*84,
+    agent = CQLAgent_Conv(state_size=env.observation_space.shape,
                         action_size=env.action_space.n,
                         device=device)
     
@@ -65,35 +65,41 @@ def train(config):
     if config.log_video:
         env = gym.wrappers.Monitor(env, './video', video_callable=lambda x: x%10==0, force=True)
 
-    for i in range(1, config.episodes+1):
+    for i in range(len(data)):
         # learn from tthe data
         states, actions, rewards, next_states, dones = data[i]
-        for t in (10, states.shape[0]):
-            states_t = states[:t, :, :, :]
-            actions_t = actions[:t]
-            rewards_t = rewards[:t]
-            next_states_t = next_states[:t, :, :, :]
-            dones_t = dones[:t]
-            experience = (states_t, actions_t, rewards_t, next_states_t, dones_t)
+        states = states.squeeze(1)
+        next_states = next_states.squeeze(1)
+
+        batch_size = 32
+        batch_states = torch.split(states, batch_size, dim=0)
+        batch_actions = torch.split(actions, batch_size, dim=0)
+        batch_rewards = torch.split(rewards, batch_size, dim=0)
+        batch_next_states = torch.split(next_states, batch_size, dim=0)
+        batch_dones = torch.split(dones, batch_size, dim=0)
+        for j in range(len(batch_states)):
+            experience = (batch_states[j], batch_actions[j], batch_rewards[j], batch_next_states[j], batch_dones[j])
             loss, cql_loss, bellmann_error = agent.learn(experience)
-
-            
-
+         
+        reward_ = 0
         # perform with the learned model
-        state = env.reset()
-        rewards = 0
-        episode_steps = 0
-        while True:
-            action = agent.get_action(state, epsilon=eps)
-            steps += 1
-            next_state, reward, done, _ = env.step(action[0])
-            state = next_state
-            rewards += reward
-            episode_steps += 1
-            eps = max(1 - ((steps*d_eps)/config.eps_frames), config.min_eps)
-            env.render()
-            if done:
-                break
+        if i%100 == 0:
+            print("Evaluating...")
+            state = env.reset()
+            reward_ = 0
+            episode_steps = 0
+            while True:
+                action = agent.get_action(state, epsilon=eps)
+                steps += 1
+                next_state, reward, done, _ = env.step(action[0])
+                state = next_state
+                reward_ += reward
+                episode_steps += 1
+                eps = max(1 - ((steps*d_eps)/config.eps_frames), config.min_eps)
+                env.render()
+                if done:
+                    break
+                
 
         # # play with the data
         # states, actions, rewards, next_states, dones = data[i]
@@ -115,13 +121,12 @@ def train(config):
         #     if done or episode_steps >= states.shape[0]:
         #         break
 
-
         
 
-        average10.append(rewards)
+        average10.append(reward_)
         total_steps += episode_steps
-        print("Episode: {} | Reward: {} | Q Loss: {} | Steps: {}".format(i, rewards, loss, steps,))
-        # print("Episode: {} | Reward: {} | Steps: {}".format(i, reward_, steps,))
+        # print("Episode: {} | Reward: {} | Q Loss: {} | Steps: {}".format(i, rewards, loss, steps,))
+        print("Episode: {} | Reward: {} | Loss: {} | Steps: {}".format(i, reward_, loss, steps,))
         if (i%30 == 0):
             torch.save(agent.network.state_dict(), "trained_models/offline_{}_{}.pth".format(config.env, i))
 

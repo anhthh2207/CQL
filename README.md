@@ -1,3 +1,6 @@
+# CQL
+Conservativa Q learning
+
 ### Set up env
 ```bash
 conda env create -f environment.yml
@@ -14,8 +17,8 @@ python download_dataset.py
 python train_online.py
 ```
 
-### Train online
+### Train offline
 ```bash
 python train_offline.py
 ```
-# CQL
+

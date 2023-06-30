@@ -82,7 +82,7 @@ class CQLAgent():
 
 
 
-class CQLAgent_Online():
+class CQLAgent_Conv():
     def __init__(self, state_size, action_size, device="cpu"):
         self.state_size = state_size
         self.action_size = action_size
@@ -101,7 +101,8 @@ class CQLAgent_Online():
     
     def get_action(self, state, epsilon):
         if random.random() > epsilon:
-            state = torch.from_numpy(state).float().unsqueeze(0).to(self.device).permute(0, -1, 1, 2)
+            # state = torch.from_numpy(state).float().unsqueeze(0).to(self.device).permute(0, -1, 1, 2)
+            state = torch.from_numpy(state).float().unsqueeze(0).unsqueeze(0).to(self.device)
             self.network.eval()
             with torch.no_grad():
                 action_values = self.network(state)
@@ -114,7 +115,8 @@ class CQLAgent_Online():
     def learn(self, experiences):
         self.optimizer.zero_grad()
         states, actions, rewards, next_states, dones = experiences
-        states, actions, rewards, next_states, dones = states.to(self.device).permute(0, -1, 1, 2).float(), actions.to(self.device).to(torch.int64).reshape(-1, 1), rewards.to(self.device).float().reshape(-1, 1), next_states.permute(0, -1, 1, 2).to(self.device).float(), dones.to(self.device).float().reshape(-1, 1)     
+        # states, actions, rewards, next_states, dones = states.to(self.device).permute(0, -1, 1, 2).float(), actions.to(self.device).to(torch.int64).reshape(-1, 1), rewards.to(self.device).float().reshape(-1, 1), next_states.permute(0, -1, 1, 2).to(self.device).float(), dones.to(self.device).float().reshape(-1, 1)     
+        states, actions, rewards, next_states, dones = states.to(self.device).unsqueeze(1).float(), actions.to(self.device).to(torch.int64).reshape(-1, 1), rewards.to(self.device).float().reshape(-1, 1), next_states.to(self.device).unsqueeze(1).float(), dones.to(self.device).float().reshape(-1, 1)     
         # print("states: ", states.shape)
         # print("dtype of state: ", states.dtype)
         # print("actions: ", actions.shape)
